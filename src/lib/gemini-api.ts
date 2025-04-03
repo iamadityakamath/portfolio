@@ -2,11 +2,11 @@ import { Message } from '../components/ChatBot';
 import {GoogleGenAI} from '@google/genai';
 
 // Get the API key from environment variables
-const API_KEY = import.meta.env.GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 // Check if API key is available
 if (!API_KEY) {
-  console.error('GEMINI_API_KEY is not defined in environment variables');
+  console.error('VITE_GEMINI_API_KEY is not defined in environment variables');
 }
 
 // Interface for the Gemini API request
