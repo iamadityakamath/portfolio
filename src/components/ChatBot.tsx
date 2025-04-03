@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Maximize2, Minimize2, Briefcase, Code2, Brain, Mail } from 'lucide-react';
+import { generateResponse } from '../lib/gemini-api';
 
-interface Message {
+export interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+  suggestions?: string[];
 }
 
 interface SuggestionBox {
@@ -87,17 +89,40 @@ export function ChatBot() {
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Get all messages to provide context
+      const currentMessages = [...messages, userMessage];
+      
+      // Call Gemini API with the full conversation history
+      const response = await generateResponse(currentMessages);
+      
+      // Handle the new response format which includes text and suggestions
       const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: getBotResponse(text),
+        id: Date.now().toString(),
+        text: typeof response === 'string' ? response : response.text,
         sender: 'bot',
         timestamp: new Date(),
+        // Add suggestions if they exist in the response
+        suggestions: typeof response === 'object' && response.suggestions ? response.suggestions : [],
       };
+      
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error getting response:', error);
+      
+      // Fallback response in case of API failure
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        text: "I'm having trouble connecting right now. Please try again later.",
+        sender: 'bot',
+        timestamp: new Date(),
+        suggestions: [],
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   const getBotResponse = (input: string): string => {
@@ -185,28 +210,82 @@ export function ChatBot() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
-          {messages.map(message => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
+          {messages.map((message, index) => (
+            <div key={message.id}>
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
-                  message.sender === 'user'
-                    ? 'bg-blue-600 text-white rounded-br-none'
-                    : 'bg-gray-800 text-gray-100 rounded-bl-none'
+                className={`flex ${
+                  message.sender === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
-                <p className="text-sm md:text-base">{message.text}</p>
-                <p className="text-xs mt-1 opacity-60">
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
+                <div
+                  className={`max-w-[80%] p-3 rounded-lg ${
+                    message.sender === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-none'
+                      : 'bg-gray-800 text-gray-100 rounded-bl-none'
+                  }`}
+                >
+                  <p className="text-sm md:text-base">{message.text}</p>
+                  <p className="text-xs mt-1 opacity-60">
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
               </div>
+              {/* Show suggestion boxes after bot messages */}
+              {message.sender === 'bot' && (
+                <div className="mt-3 flex justify-start">
+                  <div className="max-w-[80%]">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 w-full">
+                      {/* Show predefined suggestion boxes for the initial message */}
+                      {index === 0 ? (
+                        suggestionBoxes.map((suggestion) => (
+                          <button
+                            key={suggestion.id}
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="flex items-center gap-1 p-2 bg-blue-700 rounded-xl hover:bg-blue-400 transition-colors text-left overflow-hidden w-full">
+                            <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-white-600">
+                              {suggestion.icon}
+                            </span>
+                            <span className="text-xs sm:text-sm text-gray-200 truncate">
+                              {suggestion.text}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        /* Show dynamic suggestions for other bot messages if available */
+                        message.suggestions && message.suggestions.length > 0 && 
+                        message.suggestions.map((suggestionText, i) => {
+                          // Map suggestion text to appropriate icon
+                          let icon = <Brain size={16} />;
+                          if (suggestionText.toLowerCase().includes('experience') || suggestionText.toLowerCase().includes('work')) {
+                            icon = <Briefcase size={16} />;
+                          } else if (suggestionText.toLowerCase().includes('skill') || suggestionText.toLowerCase().includes('tech')) {
+                            icon = <Code2 size={16} />;
+                          } else if (suggestionText.toLowerCase().includes('contact')) {
+                            icon = <Mail size={16} />;
+                          }
+                          
+                          return (
+                            <button
+                              key={`${message.id}-suggestion-${i}`}
+                              onClick={() => handleSendMessage(`Tell me about your ${suggestionText}`)}
+                              className="flex items-center gap-1 p-2 bg-blue-700 rounded-xl hover:bg-blue-400 transition-colors text-left overflow-hidden w-full">
+                              <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-white-600">
+                                {icon}
+                              </span>
+                              <span className="text-xs sm:text-sm text-gray-200 truncate">
+                                {suggestionText}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {isTyping && (
@@ -223,26 +302,7 @@ export function ChatBot() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggestion Boxes */}
-        <div className="p-4 bg-gray-800 border-t border-gray-700">
-          <div className="grid grid-cols-2 gap-2">
-            {suggestionBoxes.map((suggestion) => (
-              <button
-                key={suggestion.id}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="flex items-center gap-2 p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors text-left"
-              >
-                <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-gray-600">
-                  {suggestion.icon}
-                </span>
-                <span className="text-sm text-gray-200 truncate">
-                  {suggestion.text}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* Suggestion Boxes - Removed from here as they now appear after the initial message */}
         {/* Input */}
         <div className="p-4 border-t border-gray-700 bg-gray-800">
           <div className="flex items-center space-x-2">
