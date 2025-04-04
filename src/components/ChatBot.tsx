@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Maximize2, Minimize2, Briefcase, Code2, Brain, Mail } from 'lucide-react';
-import { generateResponse, generateStreamingResponse } from '../lib/gemini-api';
+import { generateStreamingResponse } from '../lib/gemini-api';
+import { convertMarkdownToHTML } from '../lib/markdown';
 
 export interface Message {
   id: string;
@@ -230,7 +231,7 @@ export function ChatBot() {
                       : 'bg-gray-800 text-gray-100 rounded-bl-none'
                   }`}
                 >
-                  <p className="text-sm md:text-base">{message.text}</p>
+                  <p className="text-sm md:text-base" dangerouslySetInnerHTML={{ __html: convertMarkdownToHTML(message.text) }}></p>
                   <p className="text-xs mt-1 opacity-60">
                     {message.timestamp.toLocaleTimeString([], {
                       hour: '2-digit',
