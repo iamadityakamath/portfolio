@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Maximize2, Minimize2, Briefcase, Code2, Brain, Mail } from 'lucide-react';
-import { generateResponse } from '../lib/gemini-api';
+import { generateResponse, generateStreamingResponse } from '../lib/gemini-api';
 
 export interface Message {
   id: string;
@@ -29,7 +29,7 @@ const suggestionBoxes: SuggestionBox[] = [
     id: 'experience',
     text: 'Work Experience',
     icon: <Briefcase size={16} />,
-    message: "Tell me about your work experience and professional background."
+    message: "Tell me about your work experience"
   },
   {
     id: 'skills',
@@ -79,7 +79,7 @@ export function ChatBot() {
     if (!text.trim()) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       text: text,
       sender: 'user',
       timestamp: new Date(),
@@ -89,54 +89,60 @@ export function ChatBot() {
     setInputValue('');
     setIsTyping(true);
 
+    // Create a temporary bot message for streaming updates
+    const tempBotMessageId = `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const tempBotMessage: Message = {
+      id: tempBotMessageId,
+      text: '',
+      sender: 'bot',
+      timestamp: new Date(),
+      suggestions: [],
+    };
+    setMessages(prev => [...prev, tempBotMessage]);
+
     try {
-      // Get all messages to provide context
       const currentMessages = [...messages, userMessage];
       
-      // Call Gemini API with the full conversation history
-      const response = await generateResponse(currentMessages);
-      
-      // Handle the new response format which includes text and suggestions
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        text: typeof response === 'string' ? response : response.text,
-        sender: 'bot',
-        timestamp: new Date(),
-        // Add suggestions if they exist in the response
-        suggestions: typeof response === 'object' && response.suggestions ? response.suggestions : [],
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
+      // Use streaming response with callbacks
+      await generateStreamingResponse(
+        currentMessages,
+        {
+          onTextUpdate: (text: string) => {
+            setMessages(prev => prev.map(msg =>
+              msg.id === tempBotMessageId
+                ? { ...msg, text: msg.text + text }
+                : msg
+            ));
+          },
+          onComplete: (suggestions: string[]) => {
+            setMessages(prev => prev.map(msg =>
+              msg.id === tempBotMessageId
+                ? { ...msg, suggestions }
+                : msg
+            ));
+            setIsTyping(false);
+          },
+          onError: (error: Error) => {
+            console.error('Error in streaming response:', error);
+            setMessages(prev => prev.map(msg =>
+              msg.id === tempBotMessageId
+                ? { ...msg, text: "I'm having trouble connecting right now. Please try again later." }
+                : msg
+            ));
+            setIsTyping(false);
+          }
+        }
+      );
     } catch (error) {
       console.error('Error getting response:', error);
-      
-      // Fallback response in case of API failure
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        text: "I'm having trouble connecting right now. Please try again later.",
-        sender: 'bot',
-        timestamp: new Date(),
-        suggestions: [],
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
+      setMessages(prev => prev.map(msg =>
+        msg.id === tempBotMessageId
+          ? { ...msg, text: "I'm having trouble connecting right now. Please try again later." }
+          : msg
+      ));
       setIsTyping(false);
     }
   };
-
-  const getBotResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase();
-    if (lowerInput.includes('skill') || lowerInput.includes('tech')) {
-      return "I specialize in React, TypeScript, Node.js, and modern web development practices. I'm also experienced with cloud services and database technologies.";
-    } else if (lowerInput.includes('contact') || lowerInput.includes('email')) {
-      return "You can reach me through the contact form on my website or directly via email at [your@email.com].";
-    } else if (lowerInput.includes('project') || lowerInput.includes('work')) {
-      return "I've worked on various projects including web applications, e-commerce platforms, and data visualization tools. Check out my portfolio section for detailed case studies!";
-    }
-    return "I'm not sure how to help with that specific query. Feel free to ask about my skills, projects, or how to contact me!";
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
