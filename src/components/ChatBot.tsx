@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Maximize2, Minimize2, Briefcase, Code2, Brain, Mail } from 'lucide-react';
+import { MessageCircle, X, Send, Maximize2, Minimize2, Briefcase, Code2, Brain, Mail, FileText } from 'lucide-react';
 import { generateStreamingResponse } from '../lib/gemini-api';
 import { convertMarkdownToHTML } from '../lib/markdown';
 
@@ -61,7 +61,7 @@ export function ChatBot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
-
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -144,7 +144,8 @@ export function ChatBot() {
       setIsTyping(false);
     }
   };
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -187,8 +188,33 @@ export function ChatBot() {
           isExpanded || isMobile
             ? 'inset-0 md:inset-4'
             : 'bottom-20 right-4 md:bottom-4 md:right-6 w-[calc(100%-2rem)] md:w-[400px] h-[60vh] md:h-[600px] max-h-[calc(100vh-8rem)]'
-        } bg-gray-900 shadow-xl flex flex-col rounded-lg overflow-hidden`}
+        } bg-gray-900 shadow-xl flex rounded-lg overflow-hidden`}
       >
+        {/* PDF Viewer - Only visible in desktop expanded view */}
+        {isExpanded && !isMobile && (
+          <div className="flex flex-col w-1/2 bg-gray-800 border-r border-gray-700">
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                  <FileText size={18} className="text-white" />
+                </div>
+                <h3 className="font-semibold text-white">Resume</h3>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto bg-gray-900 flex items-center justify-center p-4">
+              {/* Use iframe for reliable PDF rendering */}
+              <iframe
+                src="/pdf/Aditya Kamath Resume.pdf#view=FitH"
+                className="w-full h-full shadow-lg"
+                style={{ minHeight: '500px', border: 'none' }}
+                title="Aditya Kamath Resume"
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Chat Content */}
+        <div className={`flex flex-col ${isExpanded && !isMobile ? 'w-1/2' : 'w-full'}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
           <div className="flex items-center space-x-3">
@@ -231,7 +257,7 @@ export function ChatBot() {
                       : 'bg-gray-800 text-gray-100 rounded-bl-none'
                   }`}
                 >
-                  <p className="text-sm md:text-base" dangerouslySetInnerHTML={{ __html: convertMarkdownToHTML(message.text) }}></p>
+                  <div className="text-sm md:text-base" dangerouslySetInnerHTML={{ __html: convertMarkdownToHTML(message.text) }}></div>
                   <p className="text-xs mt-1 opacity-60">
                     {message.timestamp.toLocaleTimeString([], {
                       hour: '2-digit',
@@ -309,7 +335,6 @@ export function ChatBot() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggestion Boxes - Removed from here as they now appear after the initial message */}
         {/* Input */}
         <div className="p-4 border-t border-gray-700 bg-gray-800">
           <div className="flex items-center space-x-2">
@@ -318,7 +343,7 @@ export function ChatBot() {
               type="text"
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Ask me anything..."
               className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-full placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
             />
@@ -335,12 +360,13 @@ export function ChatBot() {
           </p>
         </div>
       </div>
+    </div>
     </>
   );
 }
 
 // Custom hook to detect mobile viewport
-function useIsMobile() {
+function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
