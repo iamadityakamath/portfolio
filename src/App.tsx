@@ -81,6 +81,7 @@ function App() {
         <div className="container px-4 md:px-6 max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-[#1d1d1f] text-center mb-16">Featured Projects</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
             <ProjectCard
               title="Analyzing Citi Bike Ridership Trends: A Comparative Study"
               shortInfo = 'Exploratory Data Analysis (EDA) of Citi Bike ridership data from October 2019 and 2020 to uncover usage patterns, demographic trends, and the impact of the pandemic.'
@@ -123,11 +124,44 @@ function App() {
               isRichText={true}
             />
             <ProjectCard
-              title="Mobile Banking App"
-              description="A secure and intuitive mobile banking application with real-time transaction tracking."
-              image="/placeholder.svg?height=600&width=800"
-              tags={["React Native", "TypeScript", "Firebase"]}
-              link="#"
+              title="Model Selector"
+              shortInfo = "Select optimal models for your AI needs. A web platform intelligently recommends cost-effective machine learning models based on your specific tasks to reduce computational expenses."
+              
+              detailedDescription={`<li><strong>Project:</strong> Intelligent Model Selection Platform for Cost Optimization</li>
+<li><strong>Goal:</strong> Empower users to choose the most cost-effective machine learning models for their specific tasks.</li>
+<li><strong>Key Features:</strong>
+    <ul>
+        <li>Task-based model filtering.</li>
+        <li>User-defined performance and cost constraints.</li>
+        <li>Curated model database with relevant metrics.</li>
+        <li>Intelligent model recommendation engine.</li>
+        <li>Side-by-side model comparison.</li>
+    </ul>
+</li>
+<li><strong>Value Proposition:</strong> Reduces computational expenses and resource usage in machine learning projects.</li>
+<li><strong>Tech Stack:</strong> Flask, GCP- Bigquery, Cloud Run, Looker Studio, Python</li>
+<li><strong>Outcome:</strong> Facilitates efficient and budget-conscious model selection for diverse applications.</li>`}
+              
+              description="Select optimal models for your AI needs. A web platform intelligently recommends cost-effective machine learning models based on your specific tasks to reduce computational expenses."
+              image="/images/projects/MODEL SELECTOR.webp"
+              tags={["Python","GCP CLoud Run","Looker Studio"]}
+              links={[{
+                url: "https://modelselection.kamathaditya.com/",
+                label: "View Project",
+                icon: "other"
+              },
+              {
+                url: "https://lookerstudio.google.com/reporting/1e18bdd4-5e4f-4f89-b72d-93f551b934d7",
+                label: "View Dashboard",
+                icon: "other"
+              },
+              {
+                url: "https://github.com/iamadityakamath/ModelSelector-Backend",
+                label: "View Code",
+                icon: "other"
+              },
+            ]}
+              isRichText={true}
             />
             <ProjectCard
               title="AI Content Generator"
