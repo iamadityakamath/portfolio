@@ -147,17 +147,17 @@ function App() {
               tags={["Python","GCP CLoud Run","Looker Studio"]}
               links={[{
                 url: "https://modelselection.kamathaditya.com/",
-                label: "View Project",
+                label: "Project",
                 icon: "other"
               },
               {
                 url: "https://lookerstudio.google.com/reporting/1e18bdd4-5e4f-4f89-b72d-93f551b934d7",
-                label: "View Dashboard",
+                label: "Dashboard",
                 icon: "other"
               },
               {
                 url: "https://github.com/iamadityakamath/ModelSelector-Backend",
-                label: "View Code",
+                label: "Code",
                 icon: "other"
               },
             ]}
