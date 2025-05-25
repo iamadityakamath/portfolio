@@ -63,7 +63,7 @@ function App() {
                   "/images/about me/Aditya Kamath 1.webp",
                   "/images/about me/Aditya Kamath 2.webp",
                   "/images/about me/Aditya Kamath 3.webp",
-                  "/images/about me/Aditya Kamath 4.webp"]}
+                  "/images/about me/Aditya Kamath 5.webp"]}
                 autoplayInterval={4000}
               />
             </div>
