@@ -237,6 +237,7 @@ export async function handleChat(request: Request, apiKey?: string): Promise<Res
       const reader = upstream.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let emitted = 0;
 
       try {
         while (true) {
@@ -260,7 +261,10 @@ export async function handleChat(request: Request, apiKey?: string): Promise<Res
               // gpt-oss is a reasoning model: delta may also carry `reasoning`.
               // Only `content` is meant for the user.
               const token: string = parsed?.choices?.[0]?.delta?.content ?? '';
-              if (token) controller.enqueue(ndjson({ content: token }));
+              if (token) {
+                emitted += token.length;
+                controller.enqueue(ndjson({ content: token }));
+              }
             } catch {
               // Partial SSE frame — ignore and wait for more bytes.
             }
@@ -269,6 +273,18 @@ export async function handleChat(request: Request, apiKey?: string): Promise<Res
       } catch (err) {
         console.error('[api/chat] stream error', err);
         controller.enqueue(ndjson({ content: '\n\n(The response was cut short.)' }));
+      }
+
+      // gpt-oss spends completion tokens reasoning before it emits any
+      // content. If the budget runs out first we'd stream nothing at all and
+      // the user would just see an empty bubble, so say something instead.
+      if (emitted === 0) {
+        controller.enqueue(
+          ndjson({
+            content:
+              "Sorry — I couldn't put that answer together. Could you try rephrasing the question?",
+          }),
+        );
       }
 
       controller.enqueue(ndjson({ suggestions: await suggestionsPromise }));

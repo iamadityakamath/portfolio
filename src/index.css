@@ -40,10 +40,12 @@
 
   /* Liquid Glass (navigation / controls layer only) */
   --glass-bg:          255 255 255;
-  --glass-alpha:       0.72;
+  --glass-alpha:       0.52;
   --glass-border:      255 255 255;
   --glass-border-alpha: 0.6;
-  --glass-blur:        20px;
+  /* More blur compensates for the lower opacity: content still reads as a
+     diffuse wash behind the bar rather than competing with the icons. */
+  --glass-blur:        30px;
 
   /* Motion */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -79,9 +81,9 @@
   --shadow-color:        0   0   0;
 
   --glass-bg:           28  28  30;
-  --glass-alpha:       0.66;
+  --glass-alpha:       0.44;
   --glass-border:      255 255 255;
-  --glass-border-alpha: 0.14;
+  --glass-border-alpha: 0.16;
 }
 
 /* ============================================================

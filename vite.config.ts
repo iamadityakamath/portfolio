@@ -69,11 +69,16 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), apiDevServer(env)],
     optimizeDeps: {
       exclude: ['lucide-react'],
+      // Pre-bundle motion explicitly so it resolves to a single instance.
+      include: ['motion/react'],
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      // Without this, the dep optimizer can hand motion its own copy of React,
+      // which surfaces as "Invalid hook call / more than one copy of React".
+      dedupe: ['react', 'react-dom'],
     },
   };
 });
