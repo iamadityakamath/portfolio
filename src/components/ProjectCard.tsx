@@ -1,121 +1,133 @@
 import React, { useRef, useState } from 'react';
+import { ArrowUpRight, ImageOff } from 'lucide-react';
 import { use3dEffect } from './ui/use3dEffect';
 import { Modal } from './ui/Modal';
-import { ArrowRight } from 'lucide-react';
+import type { Project } from '../data/projects';
 
-interface ProjectLink {
-  url: string;
-  label: string;
-  icon: 'github' | 'demo' | 'website' | 'other';
+/** Deterministic hue per project so the fallback art is stable across reloads. */
+function hueFor(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
+  return h;
 }
 
-interface ProjectCardProps {
-  title: string;
-  description: string;
-  // Short info to display below the title
-  shortInfo?: string;
-  image: string;
-  tags: string[];
-  link?: string;
-  // Optional array of links for the project (GitHub, demo, etc.)
-  links?: ProjectLink[];
-  // Optional array of additional images for the modal
-  additionalImages?: string[];
-  // Optional detailed description for the modal
-  detailedDescription?: string;
-  // Flag to indicate if description contains markdown/rich text
-  isRichText?: boolean;
+function CardArt({ project }: { project: Project }) {
+  const [failed, setFailed] = useState(false);
+  const hue = hueFor(project.id);
+
+  if (failed) {
+    // Graceful stand-in. Four of the six project images 404 in this build;
+    // a tinted plate reads as "artwork pending" rather than "broken page".
+    return (
+      <div
+        className="flex h-full w-full flex-col items-center justify-center gap-2"
+        style={{
+          background: `linear-gradient(135deg, hsl(${hue} 70% 62% / 0.22), hsl(${
+            (hue + 50) % 360
+          } 70% 55% / 0.12))`,
+        }}
+      >
+        <ImageOff size={22} className="text-content-tertiary" aria-hidden="true" />
+        <span className="px-4 text-center text-xs font-medium text-content-tertiary">
+          Preview coming soon
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={project.image}
+      alt={project.title}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      className="h-full w-full object-cover transition-transform duration-slow ease-out-expo
+        group-hover:scale-[1.04]"
+    />
+  );
 }
 
-export function ProjectCard({ 
-  title, 
-  description, 
-  shortInfo = "", 
-  image, 
-  tags, 
-  link, 
-  links = [], 
-  additionalImages = [], 
-  detailedDescription = "",
-  isRichText = false
-}: ProjectCardProps) {
+export function ProjectCard({ project }: { project: Project }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { handleMouseMove, handleMouseLeave, transform, transition } = use3dEffect(cardRef);
-  
-  // State to control modal visibility
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Prepare images array for modal (main image + additional images)
-  const allImages = [image, ...additionalImages];
-
-  // Handle card click separately from 3D effect
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent the click from interfering with the 3D effect
-    e.stopPropagation();
-    setIsModalOpen(true);
-  };
-  
-  // Handle modal close with proper cleanup
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    // Reset any 3D effect state to ensure clean interaction after modal closes
-    if (cardRef.current) {
-      cardRef.current.style.transform = '';
-    }
-  };
+  const { handleMouseMove, handleMouseEnter, handleMouseLeave } = use3dEffect(cardRef);
+  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <div 
+      <div
         ref={cardRef}
-        className="bg-white rounded-xl overflow-hidden shadow-lg cursor-pointer" 
-        style={{ transform, transition }}
         onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onClick={handleCardClick}
+        className="group relative h-full [transform-style:preserve-3d]"
       >
-      {/* Mobile view: Title first, then image, then content */}
-      <div className="block md:hidden p-6 pb-2">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-        {shortInfo && <p className="text-sm text-gray-600 mb-2">{shortInfo}</p>}
-      </div>
-      <div className="h-48 overflow-hidden">
-        <img 
-          src={image} 
-          alt={title} 
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-        />
-      </div>
-      {/* Desktop view: Title after image */}
-      <div className="p-6">
-        <h3 className="hidden md:block text-xl font-bold text-gray-900 mb-2">{title}</h3>
-        {shortInfo && <p className="hidden md:block text-sm text-gray-600 mb-3">{shortInfo}</p>}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map((tag, index) => (
-            <span 
-              key={index} 
-              className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full"
+        <button
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          className="card card-hover relative flex h-full w-full flex-col overflow-hidden rounded-2xl
+            text-left"
+        >
+          {/* cursor-following highlight */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity
+              duration-slow group-hover:opacity-100"
+            style={{
+              background:
+                'radial-gradient(420px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgb(var(--accent) / 0.10), transparent 60%)',
+            }}
+          />
+
+          <div className="relative h-48 shrink-0 overflow-hidden bg-surface-subtle">
+            <CardArt project={project} />
+            <span
+              className="absolute left-4 top-4 rounded-full bg-badge-bg px-3 py-1.5 text-xs
+                font-semibold text-badge-text shadow-sm"
             >
-              {tag}
+              {project.category}
             </span>
-          ))}
-        </div>
-        <div className="flex justify-end items-center text-blue-600 font-medium hover:text-blue-700 transition-colors">
-          info
-          <ArrowRight className="ml-1" size={16} />
-        </div>
+          </div>
+
+          <div className="flex flex-1 flex-col p-6">
+            <h3 className="text-subhead text-content">{project.title}</h3>
+            <p className="mt-2 line-clamp-3 text-sm text-content-secondary">{project.shortInfo}</p>
+
+            {project.stats && project.stats.length > 0 && (
+              <p className="mt-3 text-xs font-medium text-accent">{project.stats.join('  •  ')}</p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-content-tertiary/10 px-3 py-1.5 text-xs font-medium
+                    text-content-secondary"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <span
+              className="mt-5 inline-flex items-center gap-1 self-start text-sm font-semibold text-accent
+                transition-all duration-base ease-out-expo group-hover:gap-2"
+            >
+              Details
+              <ArrowUpRight size={16} />
+            </span>
+          </div>
+        </button>
       </div>
-    </div>
-      
-      {/* Modal for displaying additional project details */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={handleModalClose} 
-        title={title}
-        description={detailedDescription || description}
-        images={allImages}
-        isRichText={isRichText}
-        links={links}
+
+      <Modal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={project.title}
+        description={project.detailedDescription || project.description}
+        images={[project.image]}
+        isRichText={project.isRichText}
+        links={project.links}
       />
     </>
   );

@@ -12,7 +12,6 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
   autoplayInterval = 5000,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [isAnimating, setIsAnimating] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState<boolean[]>([]);
   const [allImagesLoaded, setAllImagesLoaded] = useState(false);
@@ -21,7 +20,6 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
   const goToNext = useCallback(() => {
     if (isAnimating) return;
     setIsAnimating(true);
-    setDirection('right');
     setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
     setTimeout(() => setIsAnimating(false), 500);
   }, [images.length, isAnimating]);
@@ -29,7 +27,6 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
   const goToPrevious = useCallback(() => {
     if (isAnimating) return;
     setIsAnimating(true);
-    setDirection('left');
     setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
     setTimeout(() => setIsAnimating(false), 500);
   }, [images.length, isAnimating]);
@@ -106,11 +103,11 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
   const stackedIndices = getStackedIndices();
 
   return (
-    <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-lg overflow-visible">
+    <div className="relative w-64 h-64 md:w-[22rem] md:h-[22rem] rounded-2xl overflow-visible">
       {/* Loading indicator */}
       {!allImagesLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-50">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-subtle rounded-2xl z-50">
+          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
       
@@ -129,7 +126,7 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
             <div
               key={imageIndex}
               className={cn(
-                "absolute rounded-lg overflow-hidden shadow-xl transition-all duration-500",
+                "absolute rounded-2xl overflow-hidden shadow-xl transition-all duration-slow ease-out-expo",
                 isActive ? "z-10" : "z-0"
               )}
               style={{
@@ -145,7 +142,7 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
                 src={images[imageIndex]}
                 alt={`Profile ${imageIndex + 1}`}
                 className={cn(
-                  "w-full h-full object-cover transition-opacity duration-300",
+                  "w-full h-full object-cover transition-opacity duration-slow",
                   allImagesLoaded ? "opacity-100" : "opacity-0"
                 )}
                 loading="eager"
@@ -164,39 +161,42 @@ export const AnimatedTestimonials: React.FC<AnimatedTestimonialsProps> = ({
       <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
         <button
           onClick={goToPrevious}
-          className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors focus:outline-none"
+          className="w-11 h-11 rounded-full glass flex items-center justify-center transition-all duration-base ease-out-expo hover:scale-105"
           aria-label="Previous image"
         >
-          <ChevronLeft size={18} className="text-gray-800" />
+          <ChevronLeft size={18} className="text-content" />
         </button>
         <button
           onClick={goToNext}
-          className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors focus:outline-none"
+          className="w-11 h-11 rounded-full glass flex items-center justify-center transition-all duration-base ease-out-expo hover:scale-105"
           aria-label="Next image"
         >
-          <ChevronRight size={18} className="text-gray-800" />
+          <ChevronRight size={18} className="text-content" />
         </button>
       </div>
 
       {/* Indicators */}
-      <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-2 z-10">
+      <div className="absolute -bottom-2 left-0 right-0 flex justify-center z-10">
         {images.map((_, index) => (
           <button
             key={index}
             onClick={() => {
               if (isAnimating) return;
               setIsAnimating(true);
-              setDirection(index > currentIndex ? 'right' : 'left');
               setCurrentIndex(index);
               setTimeout(() => setIsAnimating(false), 500);
             }}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              index === currentIndex
-                ? 'bg-white w-4'
-                : 'bg-white/50 hover:bg-white/80'
-            }`}
+            className="w-11 h-11 flex items-center justify-center rounded-full"
             aria-label={`Go to image ${index + 1}`}
-          />
+            aria-current={index === currentIndex}
+          >
+            <span
+              aria-hidden="true"
+              className={`h-2 rounded-full transition-all duration-base ease-out-expo ${
+                index === currentIndex ? 'bg-white w-5' : 'bg-white/55 hover:bg-white/85 w-2'
+              }`}
+            />
+          </button>
         ))}
       </div>
     </div>

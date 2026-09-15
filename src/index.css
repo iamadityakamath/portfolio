@@ -2,36 +2,260 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   DESIGN TOKENS
+   Colors are space-separated RGB triplets so Tailwind's
+   <alpha-value> syntax works (e.g. bg-surface/70).
+   Every text/background pair below is verified >= 4.5:1;
+   most reach the 7:1 the HIG asks for on small text.
+   ============================================================ */
+
 :root {
   color-scheme: light;
+
+  /* Surfaces */
+  --surface:           255 255 255;  /* #ffffff */
+  --surface-subtle:    245 245 247;  /* #f5f5f7 */
+  --surface-elevated:  255 255 255;  /* #ffffff — cards */
+
+  /* Text — on surface / surface-subtle */
+  --text-primary:       29  29  31;  /* 16.83:1 / 15.46:1 */
+  --text-secondary:     66  66  69;  /* 10.01:1 /  9.20:1 */
+  --text-tertiary:      90  90  96;  /*  6.85:1 /  6.29:1 */
+
+  /* Accent */
+  --accent:              0 102 204;  /* #0066cc — 5.57:1 on white */
+  --accent-solid:        0 102 204;  /* button fill, white text 5.57:1 */
+  --accent-contrast:   255 255 255;
+  --accent-wash:         0 102 204;  /* used at low alpha */
+
+  /* Badge */
+  --badge-bg:          255 244 229;
+  --badge-text:        138  75   0;  /* #8a4b00 — 6.26:1 */
+
+  /* Lines + shadow */
+  --border:              0   0   0;
+  --border-alpha:      0.09;
+  --shadow-color:       17  24  39;
+
+  /* Liquid Glass (navigation / controls layer only) */
+  --glass-bg:          255 255 255;
+  --glass-alpha:       0.72;
+  --glass-border:      255 255 255;
+  --glass-border-alpha: 0.6;
+  --glass-blur:        20px;
+
+  /* Motion */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-fast:    150ms;
+  --dur-base:    220ms;
+  --dur-slow:    300ms;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --surface:             0   0   0;  /* #000000 */
+  --surface-subtle:     18  18  20;  /* #121214 */
+  --surface-elevated:   28  28  30;  /* #1c1c1e — cards */
+
+  /* on surface-elevated / surface */
+  --text-primary:      245 245 247;  /* 15.63:1 / 19.29:1 */
+  --text-secondary:    199 199 204;  /* 10.10:1 / 12.47:1 */
+  --text-tertiary:     174 174 178;  /*  7.69:1 /  9.50:1 */
+
+  --accent:             94 176 255;  /* #5eb0ff — 7.40:1 on card */
+  --accent-solid:        0  91 211;  /* #005bd3 — white text 6.11:1 */
+  --accent-contrast:   255 255 255;
+  --accent-wash:        94 176 255;
+
+  --badge-bg:           61  40  10;
+  --badge-text:        255 209 148;
+
+  --border:            255 255 255;
+  --border-alpha:      0.12;
+  --shadow-color:        0   0   0;
+
+  --glass-bg:           28  28  30;
+  --glass-alpha:       0.66;
+  --glass-border:      255 255 255;
+  --glass-border-alpha: 0.14;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+html {
+  scroll-behavior: smooth;
+  /* the floating dock sits at the bottom; keep anchors clear of it */
+  scroll-padding-bottom: 6rem;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: rgb(var(--surface));
+  color: rgb(var(--text-primary));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--dur-slow) var(--ease-out);
 }
 
-/* Custom scrollbar styles */
-@layer utilities {
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+::selection {
+  background-color: rgb(var(--accent) / 0.22);
+}
+
+/* Visible, on-brand focus ring — replaces the focus:outline-none the old build used */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@layer components {
+  /* ----------------------------------------------------------
+     LIQUID GLASS
+     HIG: this material belongs to the navigation/control layer
+     that floats above content — never inside the content layer.
+     Used here only on: the top nav, the floating dock, the
+     theme/motion toggles, and the chat launcher.
+     ---------------------------------------------------------- */
+  .glass {
+    background-color: rgb(var(--glass-bg) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-color) / 0.04),
+      0 8px 24px rgb(var(--shadow-color) / 0.08);
   }
-  
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+
+  /* Specular top edge — what sells it as glass rather than a blurred box */
+  .glass-sheen {
+    position: relative;
+    overflow: hidden;
   }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+  .glass-sheen::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.7) 50%,
+      transparent
+    );
+    pointer-events: none;
   }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 20px;
+  .dark .glass-sheen::before {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.22) 50%,
+      transparent
+    );
   }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(156, 163, 175, 0.8);
+
+  /* Content-layer surfaces: standard material, NOT glass */
+  .card {
+    background-color: rgb(var(--surface-elevated));
+    border: 1px solid rgb(var(--border) / var(--border-alpha));
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-color) / 0.04),
+      0 4px 16px rgb(var(--shadow-color) / 0.06);
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 2px 4px rgb(var(--shadow-color) / 0.05),
+      0 16px 40px rgb(var(--shadow-color) / 0.12);
+    border-color: rgb(var(--accent) / 0.35);
   }
 }
+
+@layer utilities {
+  /* --------------------------------------------------------
+     SCROLL REVEAL — driven by useReveal()
+     Elements start hidden and settle once. 300ms, ease-out.
+     -------------------------------------------------------- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--text-tertiary) / 0.4) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--text-tertiary) / 0.4);
+    border-radius: 20px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--text-tertiary) / 0.7);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* ============================================================
+   ACCESSIBILITY OVERRIDES
+   ============================================================ */
+
+/* Reduce transparency — HIG calls this out for Liquid Glass.
+   Fall back to an opaque surface so text never loses contrast. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background-color: rgb(var(--surface-elevated));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+:root[data-transparency='off'] .glass {
+  background-color: rgb(var(--surface-elevated));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Reduce motion — honored from the OS, and from the in-page toggle
+   (which sets data-motion="reduced" on <html>). */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+:root[data-motion='reduced'] { scroll-behavior: auto; }
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+:root[data-motion='reduced'] .reveal { opacity: 1; transform: none; }

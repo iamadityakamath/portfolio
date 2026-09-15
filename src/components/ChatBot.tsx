@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Maximize2, Minimize2, Briefcase, Code2, Brain, Mail, FileText } from 'lucide-react';
-import { generateStreamingResponse } from '../lib/gemini-api';
+import { generateStreamingResponse } from '../lib/chat-api';
 import { convertMarkdownToHTML } from '../lib/markdown';
 
 export interface Message {
@@ -173,7 +173,7 @@ export function ChatBot() {
       {/* Chat Icon */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-20 right-4 md:bottom-4 md:right-6 w-12 h-12 md:w-14 md:h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center z-50 ${
+        className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-accent-solid text-accent-contrast rounded-full shadow-[0_6px_20px_rgb(var(--accent)/0.4)] hover:scale-105 transition-all duration-base ease-out-expo flex items-center justify-center z-50 ${
           isOpen ? 'scale-0' : 'scale-100'
         }`}
       >
@@ -182,26 +182,26 @@ export function ChatBot() {
 
       {/* Chat Widget */}
       <div
-        className={`fixed transition-all duration-300 z-50 ${
+        className={`fixed transition-all duration-slow ease-out-expo z-50 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         } ${
           isExpanded || isMobile
             ? 'inset-0 md:inset-4'
-            : 'bottom-20 right-4 md:bottom-4 md:right-6 w-[calc(100%-2rem)] md:w-[400px] h-[60vh] md:h-[600px] max-h-[calc(100vh-8rem)]'
-        } bg-gray-900 shadow-xl flex rounded-lg overflow-hidden`}
+            : 'bottom-24 right-4 md:bottom-6 md:right-6 w-[calc(100%-2rem)] md:w-[400px] h-[60vh] md:h-[620px] max-h-[calc(100vh-9rem)]'
+        } bg-surface-elevated border border-hairline shadow-2xl flex rounded-2xl overflow-hidden`}
       >
         {/* PDF Viewer - Only visible in desktop expanded view */}
         {isExpanded && !isMobile && (
-          <div className="flex flex-col w-1/2 bg-gray-800 border-r border-gray-700">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+          <div className="flex flex-col w-1/2 bg-surface-subtle border-r border-hairline">
+            <div className="flex items-center justify-between px-4 py-3 bg-surface-subtle border-b border-hairline">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-                  <FileText size={18} className="text-white" />
+                <div className="w-8 h-8 rounded-full bg-accent-solid flex items-center justify-center">
+                  <FileText size={18} className="text-accent-contrast" />
                 </div>
-                <h3 className="font-semibold text-white">Resume</h3>
+                <h3 className="font-semibold text-content">Resume</h3>
               </div>
             </div>
-            <div className="flex-1 overflow-auto bg-gray-900 flex items-center justify-center p-4">
+            <div className="flex-1 overflow-auto bg-surface flex items-center justify-center p-4">
               {/* Use iframe for reliable PDF rendering */}
               <iframe
                 src="/pdf/Aditya Kamath Resume.pdf#view=FitH"
@@ -216,25 +216,25 @@ export function ChatBot() {
         {/* Chat Content */}
         <div className={`flex flex-col ${isExpanded && !isMobile ? 'w-1/2' : 'w-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+        <div className="flex items-center justify-between px-4 py-3 bg-surface-subtle border-b border-hairline">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-              <MessageCircle size={18} className="text-white" />
+            <div className="w-8 h-8 rounded-full bg-accent-solid flex items-center justify-center">
+              <MessageCircle size={18} className="text-accent-contrast" />
             </div>
-            <h3 className="font-semibold text-white">Adi</h3>
+            <h3 className="font-semibold text-content">Adi</h3>
           </div>
           <div className="flex items-center space-x-2">
             {!isMobile && (
               <button
                 onClick={toggleExpand}
-                className="p-1.5 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white"
+                className="w-11 h-11 flex items-center justify-center hover:bg-content/10 rounded-full transition-colors text-content-tertiary hover:text-content"
               >
                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
             )}
             <button
               onClick={handleClose}
-              className="p-1.5 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white"
+              className="w-11 h-11 flex items-center justify-center hover:bg-content/10 rounded-full transition-colors text-content-tertiary hover:text-content"
             >
               <X size={16} />
             </button>
@@ -242,7 +242,7 @@ export function ChatBot() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface custom-scrollbar">
           {messages.map((message, index) => (
             <div key={message.id}>
               <div
@@ -253,12 +253,12 @@ export function ChatBot() {
                 <div
                   className={`max-w-[80%] p-3 rounded-lg ${
                     message.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-none'
-                      : 'bg-gray-800 text-gray-100 rounded-bl-none'
+                      ? 'bg-accent-solid text-accent-contrast rounded-br-none'
+                      : 'bg-surface-subtle text-content rounded-bl-none'
                   }`}
                 >
                   <div className="text-sm md:text-base" dangerouslySetInnerHTML={{ __html: convertMarkdownToHTML(message.text) }}></div>
-                  <p className="text-xs mt-1 opacity-60">
+                  <p className="text-xs mt-1 opacity-80">
                     {message.timestamp.toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -277,11 +277,11 @@ export function ChatBot() {
                           <button
                             key={suggestion.id}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="flex items-center gap-1 p-2 bg-blue-700 rounded-xl hover:bg-blue-400 transition-colors text-left overflow-hidden w-full">
-                            <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-white-600">
+                            className="flex items-center gap-2 px-3 py-3 bg-accent-solid rounded-xl hover:brightness-110 transition-all duration-base ease-out-expo hover:-translate-y-0.5 text-left overflow-hidden w-full">
+                            <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-accent-contrast">
                               {suggestion.icon}
                             </span>
-                            <span className="text-xs sm:text-sm text-gray-200 truncate">
+                            <span className="text-xs sm:text-sm text-accent-contrast truncate">
                               {suggestion.text}
                             </span>
                           </button>
@@ -304,11 +304,11 @@ export function ChatBot() {
                             <button
                               key={`${message.id}-suggestion-${i}`}
                               onClick={() => handleSendMessage(`Tell me about your ${suggestionText}`)}
-                              className="flex items-center gap-1 p-2 bg-blue-700 rounded-xl hover:bg-blue-400 transition-colors text-left overflow-hidden w-full">
-                              <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-white-600">
+                              className="flex items-center gap-2 px-3 py-3 bg-accent-solid rounded-xl hover:brightness-110 transition-all duration-base ease-out-expo hover:-translate-y-0.5 text-left overflow-hidden w-full">
+                              <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-accent-contrast">
                                 {icon}
                               </span>
-                              <span className="text-xs sm:text-sm text-gray-200 truncate">
+                              <span className="text-xs sm:text-sm text-accent-contrast truncate">
                                 {suggestionText}
                               </span>
                             </button>
@@ -323,11 +323,11 @@ export function ChatBot() {
           ))}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-800 p-3 rounded-lg rounded-bl-none">
+              <div className="bg-surface-subtle p-3 rounded-lg rounded-bl-none">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100" />
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200" />
+                  <div className="w-2 h-2 bg-content-tertiary rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-content-tertiary rounded-full animate-bounce delay-100" />
+                  <div className="w-2 h-2 bg-content-tertiary rounded-full animate-bounce delay-200" />
                 </div>
               </div>
             </div>
@@ -336,7 +336,7 @@ export function ChatBot() {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-gray-700 bg-gray-800">
+        <div className="p-4 border-t border-hairline bg-surface-subtle">
           <div className="flex items-center space-x-2">
             <input
               ref={inputRef}
@@ -345,17 +345,17 @@ export function ChatBot() {
               onChange={e => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask me anything..."
-              className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-full placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+              className="flex-1 px-4 py-3 bg-surface border border-hairline text-content rounded-full placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-accent text-sm md:text-base"
             />
             <button
               onClick={() => handleSendMessage()}
               disabled={!inputValue.trim()}
-              className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-11 h-11 flex items-center justify-center shrink-0 bg-accent-solid text-accent-contrast rounded-full hover:brightness-110 transition-all duration-base disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
+          <p className="text-xs text-content-tertiary mt-2 text-center">
             Adi can make mistakes. Check important info.
           </p>
         </div>

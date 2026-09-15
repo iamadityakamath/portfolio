@@ -1,58 +1,85 @@
-import { useState, useEffect, RefObject } from 'react';
+import { useCallback, useEffect, useRef, RefObject } from 'react';
 
-type Use3dEffectResult = {
-  handleMouseMove: (e: React.MouseEvent<HTMLElement>) => void;
-  handleMouseLeave: () => void;
-  transform: string;
-  transition: string;
-};
+/**
+ * Pointer-tracking tilt + spotlight.
+ *
+ * The previous version called setState on every mousemove (60+ renders/sec),
+ * which is what made the tilt feel loose. This writes transforms straight to
+ * the element via rAF instead, so React never re-renders during the gesture.
+ * Also no-ops entirely when motion is reduced.
+ */
+export function use3dEffect<T extends HTMLElement>(
+  ref: RefObject<T>,
+  { tilt = 5, scale = 1.02 }: { tilt?: number; scale?: number } = {},
+) {
+  const frame = useRef<number | null>(null);
+  const enabled = useRef(true);
 
-export function use3dEffect(ref: RefObject<HTMLElement>, tiltAmount: number = 10): Use3dEffectResult {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-
-  // Reset position when component unmounts or when dependencies change
   useEffect(() => {
-    return () => {
-      setPosition({ x: 0, y: 0 });
-      setIsHovered(false);
-    };
-  }, []);
+    const check = () =>
+      !(
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        document.documentElement.getAttribute('data-motion') === 'reduced' ||
+        window.matchMedia('(hover: none)').matches
+      );
 
-  // Handle mouse movement over the card
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (!ref.current) return;
+    enabled.current = check();
 
-    const element = ref.current;
-    const rect = element.getBoundingClientRect();
-    
-    // Calculate position relative to the center of the element
-    const x = (e.clientX - rect.left) / element.offsetWidth - 0.5;
-    const y = (e.clientY - rect.top) / element.offsetHeight - 0.5;
-    
-    setPosition({ x, y });
-    setIsHovered(true);
-  };
+    const observer = new MutationObserver(() => {
+      enabled.current = check();
+      if (!enabled.current && ref.current) {
+        ref.current.style.transform = '';
+      }
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-motion'],
+    });
+    return () => observer.disconnect();
+  }, [ref]);
 
-  // Reset the card position when mouse leaves
-  const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 });
-    setIsHovered(false);
-  };
+  useEffect(
+    () => () => {
+      if (frame.current) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
-  // Calculate the transform and transition styles
-  const transform = isHovered
-    ? `perspective(1000px) rotateX(${position.y * -tiltAmount}deg) rotateY(${position.x * tiltAmount}deg) scale3d(1.05, 1.05, 1.05)`
-    : 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      const el = ref.current;
+      if (!el || !enabled.current) return;
 
-  const transition = isHovered
-    ? 'transform 0.1s ease'
-    : 'transform 0.3s ease';
+      const rect = el.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
 
-  return {
-    handleMouseMove,
-    handleMouseLeave,
-    transform,
-    transition,
-  };
+      if (frame.current) cancelAnimationFrame(frame.current);
+      frame.current = requestAnimationFrame(() => {
+        el.style.transform = `perspective(1000px) rotateX(${(py - 0.5) * -tilt}deg) rotateY(${
+          (px - 0.5) * tilt
+        }deg) scale3d(${scale}, ${scale}, ${scale})`;
+        // Drives the cursor-following highlight in CSS.
+        el.style.setProperty('--spot-x', `${px * 100}%`);
+        el.style.setProperty('--spot-y', `${py * 100}%`);
+      });
+    },
+    [ref, tilt, scale],
+  );
+
+  const handleMouseEnter = useCallback(() => {
+    const el = ref.current;
+    if (!el || !enabled.current) return;
+    el.style.transition = 'transform 120ms cubic-bezier(0.16, 1, 0.3, 1)';
+  }, [ref]);
+
+  const handleMouseLeave = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (frame.current) cancelAnimationFrame(frame.current);
+    el.style.transition = 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)';
+    el.style.transform = '';
+  }, [ref]);
+
+  return { handleMouseMove, handleMouseEnter, handleMouseLeave };
 }

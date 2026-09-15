@@ -1,88 +1,101 @@
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
+import { useReveal } from '../../hooks/useReveal';
+import type { TimelineEntry } from '../../data/experience';
 
-interface TimelineItemProps {
-  title: string;
-  content: ReactNode;
-  isLast?: boolean;
-}
-
-const TimelineItem = ({ title, content, isLast = false }: TimelineItemProps) => {
-  const itemRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        } else {
-          // Reset visibility when scrolling back up
-          setIsVisible(false);
-        }
-      },
-      {
-        threshold: 0.7, // Trigger when 70% of the item is visible for a more focused reveal
-        rootMargin: '0px 0px -20% 0px' // Adjust when the effect triggers to ensure one item at a time
-      }
-    );
-
-    if (itemRef.current) {
-      observer.observe(itemRef.current);
-    }
-
-    return () => {
-      if (itemRef.current) {
-        observer.unobserve(itemRef.current);
-      }
-    };
-  }, []);
+function LogoNode({ entry }: { entry: TimelineEntry }) {
+  const [failed, setFailed] = useState(false);
 
   return (
-    <div ref={itemRef} className="relative pb-12">
+    <span
+      aria-hidden="true"
+      className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden
+        rounded-full border border-hairline bg-surface-elevated shadow-sm"
+    >
+      {entry.logo && !failed ? (
+        <img
+          src={entry.logo}
+          alt=""
+          className="h-6 w-6 object-contain"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        // Not every employer has a logo asset — fall back to the initial
+        // rather than leaving an empty ring.
+        <span className="text-sm font-bold text-accent">{entry.company.charAt(0)}</span>
+      )}
+    </span>
+  );
+}
+
+function TimelineItem({
+  entry,
+  isLast,
+  index,
+}: {
+  entry: TimelineEntry;
+  isLast: boolean;
+  index: number;
+}) {
+  const { revealProps } = useReveal<HTMLLIElement>({ delay: index * 80, threshold: 0.15 });
+
+  return (
+    <li
+      ref={revealProps.ref}
+      style={revealProps.style}
+      className={`${revealProps.className} relative pb-12 last:pb-0`}
+    >
       {!isLast && (
-        <div
-          className={`absolute left-5 top-5 -ml-px h-full w-1 transition-all duration-700 ${isVisible ? 'bg-gradient-to-b from-blue-500 via-indigo-500 to-blue-400 shadow-sm' : 'bg-gray-200'}`}
+        <span
           aria-hidden="true"
+          className="absolute left-[19px] top-11 h-[calc(100%-2.75rem)] w-px
+            bg-gradient-to-b from-accent/45 to-hairline"
         />
       )}
-      <div className="relative flex items-start space-x-3">
-        <div className="relative">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-500 ${isVisible ? 'bg-gradient-to-r from-blue-500 to-indigo-600 scale-110 shadow-lg' : 'bg-gray-300'} ring-8 ring-white`}>
-            <span className="text-white font-semibold">•</span>
+
+      <div className="flex items-start gap-5">
+        <LogoNode entry={entry} />
+
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <p className="text-sm font-semibold uppercase tracking-wide text-accent">
+              {entry.period}
+            </p>
+            {entry.location && (
+              <p className="text-xs text-content-tertiary">{entry.location}</p>
+            )}
           </div>
-        </div>
-        <div className={`min-w-0 flex-1 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
-          <div>
-            <div className="text-sm font-medium text-gray-900">{title}</div>
-          </div>
-          <div className="mt-2 text-sm text-gray-700">{content}</div>
+
+          <h3 className="mt-1 text-subhead text-content">{entry.company}</h3>
+          <p className="text-sm font-medium text-content-secondary">{entry.role}</p>
+
+          <ul className="mt-4 space-y-2">
+            {entry.bullets.map((b, i) => (
+              <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-content-secondary">
+                <span
+                  aria-hidden="true"
+                  className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-content-tertiary"
+                />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    </div>
+    </li>
   );
-};
-
-interface TimelineProps {
-  items: Array<{
-    title: string;
-    content: ReactNode;
-  }>;
 }
 
-export function Timeline({ items }: TimelineProps) {
+export function Timeline({ items }: { items: TimelineEntry[] }) {
   return (
-    <div className="flow-root">
-      <ul className="-mb-8">
-        {items.map((item, index) => (
-          <li key={index}>
-            <TimelineItem
-              title={item.title}
-              content={item.content}
-              isLast={index === items.length - 1}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ol className="relative">
+      {items.map((entry, i) => (
+        <TimelineItem
+          key={`${entry.company}-${entry.period}`}
+          entry={entry}
+          index={i}
+          isLast={i === items.length - 1}
+        />
+      ))}
+    </ol>
   );
 }

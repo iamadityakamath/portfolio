@@ -40,18 +40,21 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscKey);
-      // Prevent scrolling when modal is open
-      document.body.style.overflow = 'hidden';
-    }
+    if (!isOpen) return;
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscKey);
+    // Lock scroll while open.
+    document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscKey);
-      // Restore scrolling when modal is closed
-      document.body.style.overflow = 'auto';
+      // Clear the inline value rather than setting 'auto'. Setting overflow
+      // on <body> makes it its own scroll container and breaks window.scrollTo
+      // for the whole page — and this cleanup runs for every mounted Modal,
+      // not just ones that were opened.
+      document.body.style.removeProperty('overflow');
     };
   }, [isOpen, onClose]);
 
@@ -91,28 +94,28 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
 
   return (
     <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${isOpen ? 'bg-black bg-opacity-50 backdrop-blur-sm' : 'bg-black bg-opacity-0 backdrop-blur-none pointer-events-none'}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-slow ease-out-expo ${isOpen ? 'bg-black bg-opacity-50 backdrop-blur-sm' : 'bg-black bg-opacity-0 backdrop-blur-none pointer-events-none'}`}
     >
       <div 
         ref={modalRef}
-        className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col md:flex-row overflow-hidden transform transition-all duration-300 ease-in-out relative ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        className={`bg-surface-elevated rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col md:flex-row overflow-hidden transform transition-all duration-slow ease-out-expo relative ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button - positioned differently for mobile and desktop */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2 rounded-full bg-white/80 hover:bg-white shadow-md transition-all duration-200 ease-in-out"
+          className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2 rounded-full glass hover:bg-surface-elevated shadow-md transition-all duration-base ease-out-expo"
           aria-label="Close"
         >
           <X size={20} />
         </button>
         {/* Mobile view: Title first */}
-        <div className="block md:hidden p-4 border-b">
-          <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+        <div className="block md:hidden p-4 border-b border-hairline">
+          <h3 className="text-heading text-content">{title}</h3>
         </div>
         
         {/* Image Gallery - Full width on mobile, half width on desktop */}
-        <div className="w-full md:w-1/2 relative h-[45vh] md:h-[90vh] bg-gray-100 md:border-r p-2 md:p-4">
+        <div className="w-full md:w-1/2 relative h-[45vh] md:h-[90vh] bg-surface-subtle md:border-r border-hairline p-2 md:p-4">
           
           {images.length > 0 ? (
             <>
@@ -120,7 +123,7 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
                 <img 
                   src={images[currentImageIndex]} 
                   alt={`${title} - image ${currentImageIndex + 1}`} 
-                  className="max-w-[98%] max-h-[98%] mx-auto object-contain transition-opacity duration-300 ease-in-out rounded-xl shadow-md"
+                  className="max-w-[98%] max-h-[98%] mx-auto object-contain transition-opacity duration-slow ease-out-expo rounded-xl shadow-md"
                 />
               </div>
               
@@ -150,7 +153,7 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm font-medium text-gray-800"
+                        className="px-4 py-2 bg-surface-elevated border border-hairline rounded-full shadow-md hover:border-accent hover:text-accent transition-colors flex items-center gap-2 text-sm font-medium text-content"
                       >
                         <IconComponent size={16} />
                         {link.label}
@@ -165,14 +168,14 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
                 <>
                   <button 
                     onClick={prevImage}
-                    className="absolute left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 hover:bg-white shadow-md transition-transform duration-200 hover:scale-110"
+                    className="absolute left-6 top-1/2 -translate-y-1/2 p-3 rounded-full glass hover:bg-surface-elevated shadow-md transition-transform duration-200 hover:scale-110"
                     aria-label="Previous image"
                   >
                     <ChevronLeft size={20} />
                   </button>
                   <button 
                     onClick={nextImage}
-                    className="absolute right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 hover:bg-white shadow-md transition-transform duration-200 hover:scale-110"
+                    className="absolute right-6 top-1/2 -translate-y-1/2 p-3 rounded-full glass hover:bg-surface-elevated shadow-md transition-transform duration-200 hover:scale-110"
                     aria-label="Next image"
                   >
                     <ChevronRight size={20} />
@@ -186,7 +189,7 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
               )}
             </>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
+            <div className="flex items-center justify-center h-full text-content-tertiary">
               No images available
             </div>
           )}
@@ -195,23 +198,19 @@ export function Modal({ isOpen, onClose, title, description, images, isRichText 
         {/* Content - Full width on mobile, half width on desktop */}
         <div className="w-full md:w-1/2 flex flex-col h-[50vh] md:h-[90vh]">
           {/* Modal Header - Hidden on mobile, visible on desktop */}
-          <div className="hidden md:flex justify-between items-center p-6 pl-8 pr-16 border-b">
-            <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+          <div className="hidden md:flex justify-between items-center p-6 pl-8 pr-16 border-b border-hairline">
+            <h3 className="text-heading text-content">{title}</h3>
           </div>
 
           {/* Description - Scrollable */}
           <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
             {isRichText ? (
               <div 
-                className="text-gray-600 prose prose-sm max-w-none"
+                className="text-content-secondary prose prose-sm dark:prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: description }}
-                style={{
-                  /* Additional styles to ensure proper list rendering */
-                  '--tw-prose-bullets': 'rgb(107, 114, 128)',
-                }}
               />
             ) : (
-              <p className="text-gray-600 whitespace-pre-line text-justify">{description}</p>
+              <p className="text-content-secondary whitespace-pre-line">{description}</p>
             )}
           </div>
         </div>
